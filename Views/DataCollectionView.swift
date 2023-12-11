@@ -35,24 +35,24 @@ struct DataCollectionView: View {
             
             VStack(spacing: 10) {
                 HStack {
-                    EventButton(event: "Enter Body", logEvent: logEvent)
+                    EventButton(event: "Event Button 1", logEvent: logEvent)
 
-                    EventButton(event: "Exit Body", logEvent: logEvent)
+                    EventButton(event: "Event Button 2", logEvent: logEvent)
                 }
                 HStack {
-                    EventButton(event: "Manual Aspiration Start", logEvent: logEvent)
+                    EventButton(event: "Event Button 3", logEvent: logEvent)
 
-                    EventButton(event: "Manual Aspiration End", logEvent: logEvent)
+                    EventButton(event: "Event Button 4", logEvent: logEvent)
                 }
                 HStack {
-                    EventButton(event: "Charged Aspiration", logEvent: logEvent)
+                    EventButton(event: "Event Button 5", logEvent: logEvent)
 
-                    EventButton(event: "Wall Latch", logEvent: logEvent)
+                    EventButton(event: "Event Button 6", logEvent: logEvent)
                 }
                 HStack {
-                    EventButton(event: "Blood Return", logEvent: logEvent)
+                    EventButton(event: "Event Button 7", logEvent: logEvent)
 
-                    EventButton(event: "Contrast Injection", logEvent: logEvent)
+                    EventButton(event: "Event Button 8", logEvent: logEvent)
                 }
                 
                 EventButton(event: "Custom", logEvent: setCustomTime)
