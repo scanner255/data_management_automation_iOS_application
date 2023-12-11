@@ -14,12 +14,12 @@ struct StartView: View {
         VStack {
             Spacer()
             
-            Image("inquis_logo")
+            Image("company_logo")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .padding(100)
             
-            Text("Gen 2.1 Sensing\nDevice Logger")
+            Text("Company device name\nDevice Logger")
                 .font(.system(size: 50))
                 .fontWeight(.bold)
                 .foregroundColor(Color.black)
