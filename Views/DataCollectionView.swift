@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import MessageUI
+import UniformTypeIdentifiers
 
 struct DataCollectionView: View {
     @Binding var dataCollectionFlag: Bool
@@ -16,6 +18,9 @@ struct DataCollectionView: View {
     @State private var customEventText = ""
     @State private var customEventTimeStamp : TimeInterval = 0
     @State private var latestEvents: [String] = []
+    @State private var isFilePickerPresented = false
+    @State private var fileName = "event_log.csv"
+    @State private var undoConfirmation = false
 
     var body: some View {
         VStack {
@@ -27,76 +32,96 @@ struct DataCollectionView: View {
                     .border(/*@START_MENU_TOKEN@*/Color.black/*@END_MENU_TOKEN@*/, width: 3.5)
             }
             
-            List(latestEvents, id: \.self) { event in
-                            Text(event)
-                        }
-                        .listStyle(InsetGroupedListStyle())
-            
-            
             VStack(spacing: 10) {
+                
+                List(latestEvents, id: \.self) { event in
+                    Text(event)
+                }
+                .listStyle(InsetGroupedListStyle())
+                .frame(minHeight: 250)
+                
                 HStack {
-                    EventButton(event: "Event Button 1", logEvent: logEvent)
-
-                    EventButton(event: "Event Button 2", logEvent: logEvent)
+                    EventButton(event: "Event 1", logEvent: logEvent)
+                    
+                    EventButton(event: "Event 2", logEvent: logEvent)
                 }
                 HStack {
-                    EventButton(event: "Event Button 3", logEvent: logEvent)
-
-                    EventButton(event: "Event Button 4", logEvent: logEvent)
+                    EventButton(event: "Event 3", logEvent: logEvent)
+                    
+                    EventButton(event: "Event 4", logEvent: logEvent)
                 }
                 HStack {
-                    EventButton(event: "Event Button 5", logEvent: logEvent)
-
-                    EventButton(event: "Event Button 6", logEvent: logEvent)
+                    EventButton(event: "Event 5", logEvent: logEvent)
+                    
+                    EventButton(event: "Event 6", logEvent: logEvent)
                 }
                 HStack {
-                    EventButton(event: "Event Button 7", logEvent: logEvent)
-
-                    EventButton(event: "Event Button 8", logEvent: logEvent)
+                    EventButton(event: "Event 7", logEvent: logEvent)
+                    
+                    EventButton(event: "Event 8", logEvent: logEvent)
                 }
                 
                 EventButton(event: "Custom", logEvent: setCustomTime)
-                                .alert("Enter custom event:", isPresented: $isCustomPopupPresented) {
-                                    TextField("Custom Event", text: $customEventText)
-                                    Button("OK") {
-                                        isCustomPopupPresented.toggle()
-                                        logEventCustom(event: customEventText, time: customEventTimeStamp)
-                                    }
-                                }
-                                .padding()
+                    .alert("Enter custom event:", isPresented: $isCustomPopupPresented) {
+                        TextField("Custom Event", text: $customEventText)
+                        Button("OK") {
+                            isCustomPopupPresented.toggle()
+                            logEventCustom(event: customEventText, time: customEventTimeStamp)
+                        }
+                    }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 
                 Button(action: {
-                                undoLastEvent()
-                            }) {
-                                Text("Undo")
-                                    .frame(width: 200, height: 50)
-                                    .background(Color.orange)
-                                    .foregroundColor(Color.white)
-                                    .cornerRadius(5)
-                            }
-                            .padding()
+                    undoConfirmation = true
+                }) {
+                    Text("Undo")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                .background(Color.orange)
+                .foregroundColor(Color.white)
+                .cornerRadius(5)
+                .confirmationDialog("Are you sure you want to undo the most recent event? This action cannot be changed.",
+                                    isPresented: $undoConfirmation,
+                                    actions: {
+                    Button("Yes, undo event", role: .destructive) {
+                        undoLastEvent()
+                    }
+                    Button("Cancel", role: .cancel, action: {})
+                }){
+                }
+                
+                
+                Button(action: {
+                    print("stop button clicked")
+                    isFilePickerPresented.toggle()
+                }) {
+                    Text("Stop")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                .background(Color.red)
+                .foregroundColor(Color.white)
+                .cornerRadius(5)
+                .fileExporter(
+                            isPresented: $isFilePickerPresented,
+                            document: CsvDocument(events: events),
+                            contentType: .plainText,
+                            defaultFilename: fileName
+                ) { result in
+                    // Handle export result if needed
+                    if case .success = result {
+                        print("CSV file exported successfully.")
+//                        emailCSV()
+                        stopDataCollection()
+                    }
+                }
+                .onAppear {
+                    startTimer()
+                }
+                .onDisappear {
+                    stopTimer()
+                }
             }
-            
-//            Spacer()
-            
-            Button(action: {
-                print("stop button clicked")
-                stopDataCollection()
-                saveToCSV()
-            }) {
-                Text("Stop")
-                    .frame(width: 400, height: 100, alignment: .center)
-            }
-            .background(Color.red)
-            .foregroundColor(Color.white)
-            .cornerRadius(5)
-        }
-        .padding()
-        .onAppear {
-            startTimer()
-        }
-        .onDisappear {
-            stopTimer()
         }
     }
     
@@ -153,30 +178,69 @@ struct DataCollectionView: View {
             let latestCount = min(events.count, 5)
             latestEvents = events.suffix(latestCount).map { $0.0 }
         }
-    
-    private func saveToCSV() {
-        let fileName = "event_log.csv"
-                var csvText = "Event, Timestamp\n"
-                let filePath = getDocumentsDirectory().appendingPathComponent(fileName)
+}
 
-                // Add events to CSV
-                for event in events {
-                    let line = "\(event.0),\(event.1)\n"
-                    csvText.append(contentsOf: line)
-                }
+struct CsvDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.plainText] }
+    static var writableContentTypes: [UTType] { [.plainText] }
+
+    var events: [(String, TimeInterval)] = []
+
+    init(events: [(String, TimeInterval)]) {
+        self.events = events
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        // Implement if needed
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        let csvText = "Event, Timestamp\n" + events.map { "\($0.0),\($0.1)" }.joined(separator: "\n")
+        guard let data = csvText.data(using: .utf8) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        return FileWrapper(regularFileWithContents: data)
+    }
+}
+
+struct MailComposeViewController: UIViewControllerRepresentable {
     
-        do {
-            try csvText.write(to: filePath, atomically: true, encoding: .utf8)
-            print("CSV file saved at \(filePath.path)")
-            print(csvText)
-        } catch {
-            print("Error saving CSV file: \(error)")
+    var toRecipients: [String]
+    var mailBody: String
+    
+    var didFinish: ()->()
+    
+    func makeCoordinator() -> Coordinator {
+        return Coordinator(self)
+    }
+    
+    func makeUIViewController(context: UIViewControllerRepresentableContext<MailComposeViewController>) -> MFMailComposeViewController {
+        
+        let mail = MFMailComposeViewController()
+        mail.mailComposeDelegate = context.coordinator
+        mail.setToRecipients(self.toRecipients)
+        mail.setMessageBody(self.mailBody, isHTML: true)
+        
+        return mail
+    }
+    
+    final class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
+        
+        var parent: MailComposeViewController
+        
+        init(_ mailController: MailComposeViewController) {
+            self.parent = mailController
+        }
+        
+        func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+            parent.didFinish()
+            controller.dismiss(animated: true)
         }
     }
     
-    func getDocumentsDirectory() -> URL {
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-
-        return paths[0]
+    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: UIViewControllerRepresentableContext<MailComposeViewController>) {
+        
     }
 }
+
+
