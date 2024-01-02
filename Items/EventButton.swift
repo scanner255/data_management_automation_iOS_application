@@ -26,13 +26,11 @@ struct EventButton : View {
                 }
             }
         })
-        .frame(idealWidth: 400, minHeight: 75, idealHeight: 100,  alignment: .center )
-        .font(.system(.title, design: .rounded))
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .background(self.isTapped ? Color.cyan : Color.blue) // Change color conditionally
         .foregroundColor(Color.white)
         .cornerRadius(5)
-//        .padding()
+        .controlSize(/*@START_MENU_TOKEN@*/.regular/*@END_MENU_TOKEN@*/)
     }
     
 }
